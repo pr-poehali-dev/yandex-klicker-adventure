@@ -25,20 +25,51 @@ export default function Index() {
   const {
     state, handleClick, buyBoost, unlockBoostAd, setPlayerName,
     getActiveMultiplier, getBoostTimeLeft,
-    selectSkin, buySkin, unlockSkinAd,
+    selectSkin, buySkin, unlockSkinAd, loadCloudState,
   } = useGameState();
 
-  const { adStatus, showRewardedAd, showFullscreenAd, submitScore } = useYandexGames();
+  const { adStatus, showRewardedAd, showFullscreenAd, submitScore, saveProgress, loadProgress, ready } = useYandexGames();
 
   const multiplier = getActiveMultiplier();
   const currentSkin = SKINS.find(s => s.id === state.currentSkinId) ?? SKINS[0];
 
   // Счётчик и порог для случайной рекламы при кликах
   const clicksSinceAdRef = useRef(0);
-  const nextAdThresholdRef = useRef(50 + Math.floor(Math.random() * 60)); // 50–110 кликов
+  const nextAdThresholdRef = useRef(600 + Math.floor(Math.random() * 300)); // 600–900 кликов
   const adCooldownRef = useRef(false);
 
-  // Отправляем счёт в лидерборд при каждом клике (дебаунс 5с)
+  // Загружаем облачный прогресс, когда SDK готов — мёрдж: берём максимум по totalClicks
+  useEffect(() => {
+    if (!ready) return;
+    (async () => {
+      const cloud = await loadProgress();
+      if (!cloud) return;
+      // Мёрдж: применяем облачный сейв только если он "старше" по прогрессу
+      const cloudClicks = (cloud.totalClicks as number) ?? 0;
+      if (cloudClicks > state.totalClicks) {
+        loadCloudState(cloud as Parameters<typeof loadCloudState>[0]);
+      }
+    })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready]);
+
+  // Сохраняем прогресс в облако каждые 10с при изменении состояния
+  useEffect(() => {
+    const t = setTimeout(() => {
+      saveProgress({
+        coins: state.coins,
+        totalClicks: state.totalClicks,
+        totalCoinsEarned: state.totalCoinsEarned,
+        playerName: state.playerName,
+        currentSkinId: state.currentSkinId,
+        unlockedSkins: state.unlockedSkins,
+        achievements: state.achievements.map(a => ({ id: a.id, unlocked: a.unlocked })),
+      });
+    }, 10_000);
+    return () => clearTimeout(t);
+  }, [state, saveProgress]);
+
+  // Отправляем счёт в лидерборд (дебаунс 5с)
   useEffect(() => {
     const t = setTimeout(() => submitScore(state.totalClicks), 5000);
     return () => clearTimeout(t);
@@ -61,7 +92,7 @@ export default function Index() {
     clicksSinceAdRef.current += 1;
     if (clicksSinceAdRef.current >= nextAdThresholdRef.current) {
       clicksSinceAdRef.current = 0;
-      nextAdThresholdRef.current = 50 + Math.floor(Math.random() * 60);
+      nextAdThresholdRef.current = 600 + Math.floor(Math.random() * 300);
       adCooldownRef.current = true;
       showFullscreenAd(() => {
         // После закрытия рекламы — кулдаун 10 сек, чтобы не раздражать подряд

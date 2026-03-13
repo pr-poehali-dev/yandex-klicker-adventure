@@ -1,6 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 
-/* Типы для Yandex Games SDK */
 declare global {
   interface Window {
     YaGames?: {
@@ -28,6 +27,7 @@ interface YaSDK {
     }) => void;
   };
   getLeaderboards: () => Promise<YaLeaderboards>;
+  getPlayer: (opts?: { scopes?: boolean }) => Promise<YaPlayer>;
 }
 
 interface YaLeaderboards {
@@ -35,10 +35,19 @@ interface YaLeaderboards {
   getLeaderboardPlayerEntry: (name: string) => Promise<unknown>;
 }
 
+interface YaPlayer {
+  setData: (data: Record<string, unknown>, flush?: boolean) => Promise<void>;
+  getData: (keys?: string[]) => Promise<Record<string, unknown>>;
+  getUniqueID: () => string;
+  getName: () => string;
+  getPhoto: (size: 'small' | 'medium' | 'large') => string;
+}
+
 type AdStatus = 'idle' | 'loading' | 'showing' | 'rewarded' | 'closed' | 'error';
 
 export function useYandexGames() {
   const sdkRef = useRef<YaSDK | null>(null);
+  const playerRef = useRef<YaPlayer | null>(null);
   const [ready, setReady] = useState(false);
   const [adStatus, setAdStatus] = useState<AdStatus>('idle');
 
@@ -48,8 +57,13 @@ export function useYandexGames() {
       return;
     }
     window.YaGames.init()
-      .then(sdk => {
+      .then(async sdk => {
         sdkRef.current = sdk;
+        try {
+          playerRef.current = await sdk.getPlayer({ scopes: false });
+        } catch (e) {
+          console.warn('[YaGames] Не удалось получить Player', e);
+        }
         setReady(true);
         console.log('[YaGames] SDK инициализирован');
       })
@@ -57,13 +71,38 @@ export function useYandexGames() {
   }, []);
 
   /**
+   * Сохранить прогресс игрока в облако Яндекс.
+   * data — любой сериализуемый объект (состояние игры).
+   */
+  const saveProgress = useCallback(async (data: Record<string, unknown>) => {
+    if (!playerRef.current) return;
+    try {
+      await playerRef.current.setData(data, true);
+    } catch (e) {
+      console.warn('[YaGames] Ошибка сохранения прогресса', e);
+    }
+  }, []);
+
+  /**
+   * Загрузить прогресс игрока из облака Яндекс.
+   * Возвращает объект с данными или null если SDK не готов.
+   */
+  const loadProgress = useCallback(async (): Promise<Record<string, unknown> | null> => {
+    if (!playerRef.current) return null;
+    try {
+      return await playerRef.current.getData();
+    } catch (e) {
+      console.warn('[YaGames] Ошибка загрузки прогресса', e);
+      return null;
+    }
+  }, []);
+
+  /**
    * Показать Rewarded Video (реклама за награду).
-   * onRewarded вызывается только если пользователь досмотрел.
    */
   const showRewardedAd = (onRewarded: () => void, onFail?: () => void) => {
     setAdStatus('loading');
 
-    // DEV-режим: SDK не загружен — сразу даём награду через 1.5с
     if (!sdkRef.current) {
       console.log('[YaGames] DEV: симулируем rewarded ad');
       setTimeout(() => {
@@ -94,11 +133,9 @@ export function useYandexGames() {
 
   /**
    * Показать полноэкранную рекламу (interstitial).
-   * Вызывается между уровнями / при открытии игры.
    */
   const showFullscreenAd = (onClose?: () => void) => {
     if (!sdkRef.current) {
-      // DEV-режим: симулируем показ на 0.5с потом закрываем
       setTimeout(() => onClose?.(), 500);
       return;
     }
@@ -123,5 +160,5 @@ export function useYandexGames() {
     }
   };
 
-  return { ready, adStatus, showRewardedAd, showFullscreenAd, submitScore };
+  return { ready, adStatus, showRewardedAd, showFullscreenAd, submitScore, saveProgress, loadProgress };
 }

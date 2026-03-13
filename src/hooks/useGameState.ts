@@ -193,9 +193,37 @@ export function useGameState() {
     });
   }, []);
 
+  /**
+   * Загружает облачный сейв (из Yandex Player API) — применяется поверх localStorage
+   * только если облако опережает по прогрессу.
+   */
+  const loadCloudState = useCallback((cloud: {
+    coins?: number;
+    totalClicks?: number;
+    totalCoinsEarned?: number;
+    playerName?: string;
+    currentSkinId?: string;
+    unlockedSkins?: string[];
+    achievements?: { id: string; unlocked: boolean }[];
+  }) => {
+    setState(s => ({
+      ...s,
+      coins:            cloud.coins            ?? s.coins,
+      totalClicks:      cloud.totalClicks      ?? s.totalClicks,
+      totalCoinsEarned: cloud.totalCoinsEarned ?? s.totalCoinsEarned,
+      playerName:       cloud.playerName       ?? s.playerName,
+      currentSkinId:    cloud.currentSkinId    ?? s.currentSkinId,
+      unlockedSkins:    cloud.unlockedSkins    ?? s.unlockedSkins,
+      achievements: s.achievements.map(a => {
+        const ca = cloud.achievements?.find(x => x.id === a.id);
+        return ca?.unlocked ? { ...a, unlocked: true } : a;
+      }),
+    }));
+  }, []);
+
   return {
     state, handleClick, buyBoost, unlockBoostAd, setPlayerName,
     getActiveMultiplier, getBoostTimeLeft,
-    selectSkin, buySkin, unlockSkinAd,
+    selectSkin, buySkin, unlockSkinAd, loadCloudState,
   };
 }
