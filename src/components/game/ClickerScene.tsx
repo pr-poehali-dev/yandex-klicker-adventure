@@ -1,5 +1,7 @@
 import { useState, useCallback, useRef } from 'react';
 import type { Skin } from '@/data/skins';
+import type { Achievement } from '@/types/game';
+import AchievementToast from './AchievementToast';
 
 interface CoinParticle { id: number; x: number; y: number; label: string; }
 
@@ -9,10 +11,11 @@ interface Props {
   clicksPerSecond: number;
   multiplier: number;
   skin: Skin;
+  achievements: Achievement[];
   onClick: () => void;
 }
 
-export default function ClickerScene({ coins, totalClicks, clicksPerSecond, multiplier, skin, onClick }: Props) {
+export default function ClickerScene({ coins, totalClicks, clicksPerSecond, multiplier, skin, achievements, onClick }: Props) {
   const [particles, setParticles] = useState<CoinParticle[]>([]);
   const [isClicking, setIsClicking] = useState(false);
   const particleId = useRef(0);
@@ -133,6 +136,9 @@ export default function ClickerScene({ coins, totalClicks, clicksPerSecond, mult
           style={{ background: '#FFD700', color: '#111' }}>R$</div>
         <span className="font-game text-base" style={{ color: '#FFD700' }}>{formatCoins(coins)} монет</span>
       </div>
+
+      {/* Achievement toast — под кнопкой, не перекрывает статистику */}
+      <AchievementToast achievements={achievements} />
     </div>
   );
 }

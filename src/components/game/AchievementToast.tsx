@@ -19,24 +19,22 @@ export default function AchievementToast({ achievements }: Props) {
   if (!current) return null;
 
   return (
-    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 animate-bounce-in"
-      style={{ maxWidth: 320, width: 'calc(100% - 32px)' }}>
-      <div className="flex items-center gap-3 px-5 py-4"
+    <div className="w-full flex justify-center px-4 animate-bounce-in">
+      <div className="flex items-center gap-3 px-4 py-3 w-full max-w-sm"
         style={{
           background: '#1C2333',
           border: '3px solid #FFD700',
           borderRadius: 6,
           boxShadow: '0 6px 0 #9a8200, 0 0 30px rgba(255,215,0,0.35)',
         }}>
-        {/* Left accent */}
         <div className="w-1.5 self-stretch rounded-full flex-shrink-0" style={{ background: '#FFD700' }} />
-        <span className="text-3xl">{current.emoji}</span>
+        <span className="text-2xl">{current.emoji}</span>
         <div>
-          <div className="text-xs font-black tracking-widest mb-0.5" style={{ color: '#FFD700' }}>
+          <div className="text-[10px] font-black tracking-widest mb-0.5" style={{ color: '#FFD700' }}>
             ДОСТИЖЕНИЕ!
           </div>
-          <div className="font-game text-base text-white leading-none">{current.name}</div>
-          <div className="text-xs font-bold mt-0.5" style={{ color: '#4a5768' }}>Награда: +{current.reward} 🪙</div>
+          <div className="font-game text-sm text-white leading-none">{current.name}</div>
+          <div className="text-[11px] font-bold mt-0.5" style={{ color: '#4a5768' }}>Награда: +{current.reward} 🪙</div>
         </div>
       </div>
     </div>

@@ -7,7 +7,6 @@ import AchievementsPage from '@/components/game/AchievementsPage';
 import LeaderboardPage from '@/components/game/LeaderboardPage';
 import AboutPage from '@/components/game/AboutPage';
 import SkinsPage from '@/components/game/SkinsPage';
-import AchievementToast from '@/components/game/AchievementToast';
 import { SKINS } from '@/data/skins';
 
 type Tab = 'game' | 'skins' | 'boosts' | 'achievements' | 'leaderboard';
@@ -182,7 +181,7 @@ export default function Index() {
           <div className="py-5">
             <ClickerScene coins={state.coins} totalClicks={state.totalClicks}
               clicksPerSecond={state.clicksPerSecond} multiplier={multiplier}
-              skin={currentSkin} onClick={handleClickWithAd} />
+              skin={currentSkin} achievements={state.achievements} onClick={handleClickWithAd} />
           </div>
         )}
         {tab === 'skins' && (
@@ -221,7 +220,6 @@ export default function Index() {
         ))}
       </nav>
 
-      <AchievementToast achievements={state.achievements} />
     </div>
   );
 }
