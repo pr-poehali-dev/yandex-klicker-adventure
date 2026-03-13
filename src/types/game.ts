@@ -41,4 +41,6 @@ export interface GameState {
   achievements: Achievement[];
   activeBoosts: ActiveBoost[];
   totalCoinsEarned: number;
+  currentSkinId: string;
+  unlockedSkins: string[];
 }

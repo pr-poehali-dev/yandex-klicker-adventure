@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import type { GameState, ActiveBoost } from '@/types/game';
 import { ACHIEVEMENTS } from '@/data/gameData';
 
-const STORAGE_KEY = 'roboclick_save';
+const STORAGE_KEY = 'roboclick_save_v2';
 
 const defaultState: GameState = {
   coins: 0,
@@ -13,6 +13,8 @@ const defaultState: GameState = {
   achievements: ACHIEVEMENTS.map(a => ({ ...a })),
   activeBoosts: [],
   totalCoinsEarned: 0,
+  currentSkinId: 'noob',
+  unlockedSkins: ['noob'],
 };
 
 function loadState(): GameState {
@@ -30,6 +32,8 @@ function loadState(): GameState {
         activeBoosts: (parsed.activeBoosts || []).filter(
           (b: ActiveBoost) => b.expiresAt > Date.now()
         ),
+        currentSkinId: parsed.currentSkinId ?? 'noob',
+        unlockedSkins: parsed.unlockedSkins ?? ['noob'],
       };
     }
   } catch (e) {
@@ -46,9 +50,7 @@ export function useGameState() {
   const autoClickRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    const t = setTimeout(() => {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    }, 500);
+    const t = setTimeout(() => localStorage.setItem(STORAGE_KEY, JSON.stringify(state)), 500);
     return () => clearTimeout(t);
   }, [state]);
 
@@ -86,7 +88,6 @@ export function useGameState() {
 
   const handleClick = useCallback((isAuto = false) => {
     if (!isAuto) clickTimestamps.current.push(Date.now());
-
     setState(s => {
       const mult = getMultiplier(s.activeBoosts);
       const earned = s.coinsPerClick * mult;
@@ -97,14 +98,14 @@ export function useGameState() {
       const newAchievements = s.achievements.map(a => {
         if (a.unlocked) return a;
         let unlocked = false;
-        if (a.id === 'first' && newTotal >= 1) unlocked = true;
-        if (a.id === 'ten' && newTotal >= 10) unlocked = true;
-        if (a.id === 'hundred' && newTotal >= 100) unlocked = true;
-        if (a.id === 'five_hundred' && newTotal >= 500) unlocked = true;
-        if (a.id === 'thousand' && newTotal >= 1000) unlocked = true;
-        if (a.id === 'five_k' && newTotal >= 5000) unlocked = true;
-        if (a.id === 'coins_1k' && newTotalEarned >= 1000) unlocked = true;
-        if (a.id === 'speed' && clickTimestamps.current.length >= 10) unlocked = true;
+        if (a.id === 'first'        && newTotal >= 1)          unlocked = true;
+        if (a.id === 'ten'          && newTotal >= 10)          unlocked = true;
+        if (a.id === 'hundred'      && newTotal >= 100)         unlocked = true;
+        if (a.id === 'five_hundred' && newTotal >= 500)         unlocked = true;
+        if (a.id === 'thousand'     && newTotal >= 1000)        unlocked = true;
+        if (a.id === 'five_k'       && newTotal >= 5000)        unlocked = true;
+        if (a.id === 'coins_1k'     && newTotalEarned >= 1000)  unlocked = true;
+        if (a.id === 'speed'        && clickTimestamps.current.length >= 10) unlocked = true;
         return unlocked ? { ...a, unlocked: true } : a;
       });
 
@@ -123,22 +124,14 @@ export function useGameState() {
     });
   }, [getMultiplier]);
 
-  // Auto-click for robot boost
   useEffect(() => {
     const hasRobot = state.activeBoosts.some(b => b.boostId === 'robot');
     if (hasRobot) {
-      autoClickRef.current = setInterval(() => {
-        handleClick(true);
-      }, 400);
+      autoClickRef.current = setInterval(() => handleClick(true), 400);
     } else {
-      if (autoClickRef.current) {
-        clearInterval(autoClickRef.current);
-        autoClickRef.current = null;
-      }
+      if (autoClickRef.current) { clearInterval(autoClickRef.current); autoClickRef.current = null; }
     }
-    return () => {
-      if (autoClickRef.current) clearInterval(autoClickRef.current);
-    };
+    return () => { if (autoClickRef.current) clearInterval(autoClickRef.current); };
   }, [state.activeBoosts, handleClick]);
 
   const buyBoost = useCallback((boostId: string, cost: number, duration: number) => {
@@ -147,9 +140,7 @@ export function useGameState() {
       const now = Date.now();
       const existing = s.activeBoosts.find(b => b.boostId === boostId);
       const newBoosts = existing
-        ? s.activeBoosts.map(b => b.boostId === boostId
-            ? { ...b, expiresAt: Math.max(b.expiresAt, now) + duration * 1000 }
-            : b)
+        ? s.activeBoosts.map(b => b.boostId === boostId ? { ...b, expiresAt: Math.max(b.expiresAt, now) + duration * 1000 } : b)
         : [...s.activeBoosts, { boostId, expiresAt: now + duration * 1000 }];
       return { ...s, coins: s.coins - cost, activeBoosts: newBoosts };
     });
@@ -160,9 +151,7 @@ export function useGameState() {
       const now = Date.now();
       const existing = s.activeBoosts.find(b => b.boostId === boostId);
       const newBoosts = existing
-        ? s.activeBoosts.map(b => b.boostId === boostId
-            ? { ...b, expiresAt: Math.max(b.expiresAt, now) + duration * 1000 }
-            : b)
+        ? s.activeBoosts.map(b => b.boostId === boostId ? { ...b, expiresAt: Math.max(b.expiresAt, now) + duration * 1000 } : b)
         : [...s.activeBoosts, { boostId, expiresAt: now + duration * 1000 }];
       return { ...s, activeBoosts: newBoosts };
     });
@@ -172,9 +161,7 @@ export function useGameState() {
     setState(s => ({ ...s, playerName: name }));
   }, []);
 
-  const getActiveMultiplier = useCallback(() => {
-    return getMultiplier(state.activeBoosts);
-  }, [state.activeBoosts, getMultiplier]);
+  const getActiveMultiplier = useCallback(() => getMultiplier(state.activeBoosts), [state.activeBoosts, getMultiplier]);
 
   const getBoostTimeLeft = useCallback((boostId: string) => {
     const boost = state.activeBoosts.find(b => b.boostId === boostId);
@@ -182,13 +169,33 @@ export function useGameState() {
     return Math.max(0, Math.ceil((boost.expiresAt - Date.now()) / 1000));
   }, [state.activeBoosts]);
 
+  const selectSkin = useCallback((skinId: string) => {
+    setState(s => {
+      if (!s.unlockedSkins.includes(skinId)) return s;
+      return { ...s, currentSkinId: skinId };
+    });
+  }, []);
+
+  const buySkin = useCallback((skinId: string, price: number): boolean => {
+    let ok = false;
+    setState(s => {
+      if (s.coins < price || s.unlockedSkins.includes(skinId)) return s;
+      ok = true;
+      return { ...s, coins: s.coins - price, unlockedSkins: [...s.unlockedSkins, skinId], currentSkinId: skinId };
+    });
+    return ok;
+  }, []);
+
+  const unlockSkinAd = useCallback((skinId: string) => {
+    setState(s => {
+      if (s.unlockedSkins.includes(skinId)) return s;
+      return { ...s, unlockedSkins: [...s.unlockedSkins, skinId], currentSkinId: skinId };
+    });
+  }, []);
+
   return {
-    state,
-    handleClick,
-    buyBoost,
-    unlockBoostAd,
-    setPlayerName,
-    getActiveMultiplier,
-    getBoostTimeLeft,
+    state, handleClick, buyBoost, unlockBoostAd, setPlayerName,
+    getActiveMultiplier, getBoostTimeLeft,
+    selectSkin, buySkin, unlockSkinAd,
   };
 }

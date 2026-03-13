@@ -1,6 +1,5 @@
 import { useState, useCallback, useRef } from 'react';
-
-const NOOB_IMG = 'https://cdn.poehali.dev/projects/8908f6bc-a84f-4d41-836a-c95d7da5738b/files/b78e2fb0-bd47-4400-be18-8ed943c6f323.jpg';
+import type { Skin } from '@/data/skins';
 
 interface CoinParticle { id: number; x: number; y: number; label: string; }
 
@@ -9,10 +8,11 @@ interface Props {
   totalClicks: number;
   clicksPerSecond: number;
   multiplier: number;
+  skin: Skin;
   onClick: () => void;
 }
 
-export default function ClickerScene({ coins, totalClicks, clicksPerSecond, multiplier, onClick }: Props) {
+export default function ClickerScene({ coins, totalClicks, clicksPerSecond, multiplier, skin, onClick }: Props) {
   const [particles, setParticles] = useState<CoinParticle[]>([]);
   const [isClicking, setIsClicking] = useState(false);
   const particleId = useRef(0);
@@ -35,7 +35,7 @@ export default function ClickerScene({ coins, totalClicks, clicksPerSecond, mult
       y = ((clientY - rect.top) / rect.height) * 100;
     }
     const id = particleId.current++;
-    const pool = multiplier >= 10 ? ['💎','⭐','🔥'] : multiplier >= 5 ? ['🌟','⚡'] : ['⚡','🪙'];
+    const pool = multiplier >= 10 ? ['💎','💎','⭐'] : multiplier >= 5 ? ['🌟','⚡'] : ['⚡','🪙'];
     const label = pool[Math.floor(Math.random() * pool.length)];
     setParticles(p => [...p, { id, x, y, label }]);
     setTimeout(() => setParticles(p => p.filter(pp => pp.id !== id)), 750);
@@ -61,60 +61,48 @@ export default function ClickerScene({ coins, totalClicks, clicksPerSecond, mult
         ))}
       </div>
 
-      {/* Multiplier banner */}
+      {/* Multiplier */}
       {multiplier > 1 && (
         <div
-          className="animate-bounce-in flex items-center gap-2 px-5 py-2 font-game text-lg"
+          className="animate-bounce-in flex items-center gap-2 px-5 py-2 font-game text-base"
           style={{ background: 'linear-gradient(90deg,#E61919,#ff4444)', borderRadius: 4, boxShadow: '0 4px 0 #8f0e0e', color: '#fff' }}
         >
           🔥 МНОЖИТЕЛЬ x{multiplier} АКТИВЕН!
         </div>
       )}
 
-      {/* Character */}
-      <div
-        ref={containerRef}
-        className="relative cursor-pointer select-none touch-none"
-        style={{ width: 240, height: 280 }}
-        onClick={handleClick}
-        onTouchStart={handleClick}
-      >
-        {/* Shadow */}
-        <div className="absolute bottom-0 left-1/2 -translate-x-1/2"
-          style={{ width: 150, height: 16, background: 'radial-gradient(ellipse,rgba(0,0,0,0.55) 0%,transparent 70%)', borderRadius: '50%' }}
-        />
+      {/* Character zone */}
+      <div ref={containerRef} className="relative cursor-pointer select-none touch-none"
+        style={{ width: 240, height: 280 }} onClick={handleClick} onTouchStart={handleClick}>
 
-        {/* Noob block-character */}
-        <div
-          className="absolute inset-x-8 top-0 bottom-8"
-          style={{
-            animation: isClicking ? 'click-burst 0.3s ease-out' : 'float-rblx 2.8s ease-in-out infinite',
-            filter: isClicking
-              ? 'drop-shadow(0 0 24px #1A6BFF)'
-              : 'drop-shadow(0 8px 14px rgba(0,0,0,0.7))',
-          }}
-        >
+        {/* Ground shadow */}
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2"
+          style={{ width: 150, height: 16, background: 'radial-gradient(ellipse,rgba(0,0,0,0.55) 0%,transparent 70%)', borderRadius: '50%' }} />
+
+        {/* Skin image */}
+        <div className="absolute inset-x-8 top-0 bottom-8" style={{
+          animation: isClicking ? 'click-burst 0.3s ease-out' : 'float-rblx 2.8s ease-in-out infinite',
+          filter: isClicking ? `drop-shadow(0 0 24px ${skin.borderColor})` : `drop-shadow(0 8px 14px rgba(0,0,0,0.7))`,
+        }}>
           <div style={{
             width: '100%', height: '100%',
-            border: '3px solid #2D3A50',
+            border: `3px solid ${skin.borderColor}88`,
             borderRadius: 6,
             overflow: 'hidden',
             background: '#0F1923',
             boxShadow: isClicking
-              ? '0 0 32px rgba(26,107,255,0.9), inset 0 0 20px rgba(26,107,255,0.25)'
-              : '0 0 0 2px #1A6BFF33, 0 2px 16px rgba(0,0,0,0.5)',
+              ? `0 0 32px ${skin.glowColor}, inset 0 0 20px ${skin.glowColor}`
+              : `0 0 0 2px ${skin.borderColor}22, 0 2px 16px rgba(0,0,0,0.5)`,
           }}>
-            <img
-              src={NOOB_IMG}
-              alt="Noob"
+            <img src={skin.img} alt={skin.name}
               style={{ width: '100%', height: '100%', objectFit: 'cover', imageRendering: 'pixelated' }}
               draggable={false}
             />
           </div>
           {/* Name tag */}
           <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 whitespace-nowrap"
-            style={{ background: '#000c', border: '1px solid #2D3A50', borderRadius: 3, padding: '2px 8px', fontSize: '0.68rem', fontWeight: 800, color: '#fff', letterSpacing: '0.05em' }}>
-            Noob_1337
+            style={{ background: '#000c', border: `1px solid ${skin.borderColor}55`, borderRadius: 3, padding: '2px 8px', fontSize: '0.68rem', fontWeight: 800, color: '#fff', letterSpacing: '0.05em' }}>
+            {skin.tag}
           </div>
         </div>
 
@@ -127,24 +115,22 @@ export default function ClickerScene({ coins, totalClicks, clicksPerSecond, mult
         {totalClicks === 0 && (
           <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 whitespace-nowrap text-xs font-bold tracking-widest"
             style={{ color: '#3d4a60' }}>
-            ▼ НАЖИМАЙ НА НУБА! ▼
+            ▼ НАЖИМАЙ НА ПЕРСОНАЖА! ▼
           </div>
         )}
       </div>
 
       {/* Big click button */}
-      <button
-        className="rblx-btn rblx-btn-blue btn-click-pulse mt-4"
+      <button className="rblx-btn rblx-btn-blue btn-click-pulse mt-4"
         style={{ fontSize: '1.35rem', padding: '14px 52px', borderRadius: 5 }}
-        onClick={handleClick}
-        onTouchStart={handleClick}
-      >
+        onClick={handleClick} onTouchStart={handleClick}>
         🪙 ТЫК! {multiplier > 1 ? `+${multiplier}` : '+1'}
       </button>
 
-      {/* Robux-style balance */}
+      {/* Balance */}
       <div className="flex items-center gap-2 mt-0.5">
-        <div className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black" style={{ background: '#FFD700', color: '#111' }}>R$</div>
+        <div className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black"
+          style={{ background: '#FFD700', color: '#111' }}>R$</div>
         <span className="font-game text-base" style={{ color: '#FFD700' }}>{formatCoins(coins)} монет</span>
       </div>
     </div>
