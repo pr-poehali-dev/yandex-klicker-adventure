@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useGameState } from '@/hooks/useGameState';
 import { useYandexGames } from '@/hooks/useYandexGames';
 import ClickerScene from '@/components/game/ClickerScene';
@@ -33,6 +33,11 @@ export default function Index() {
   const multiplier = getActiveMultiplier();
   const currentSkin = SKINS.find(s => s.id === state.currentSkinId) ?? SKINS[0];
 
+  // Счётчик и порог для случайной рекламы при кликах
+  const clicksSinceAdRef = useRef(0);
+  const nextAdThresholdRef = useRef(50 + Math.floor(Math.random() * 60)); // 50–110 кликов
+  const adCooldownRef = useRef(false);
+
   // Отправляем счёт в лидерборд при каждом клике (дебаунс 5с)
   useEffect(() => {
     const t = setTimeout(() => submitScore(state.totalClicks), 5000);
@@ -48,6 +53,22 @@ export default function Index() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Обёртка клика — считаем клики, иногда показываем рекламу
+  const handleClickWithAd = () => {
+    handleClick();
+    if (adCooldownRef.current) return;
+    clicksSinceAdRef.current += 1;
+    if (clicksSinceAdRef.current >= nextAdThresholdRef.current) {
+      clicksSinceAdRef.current = 0;
+      nextAdThresholdRef.current = 50 + Math.floor(Math.random() * 60);
+      adCooldownRef.current = true;
+      showFullscreenAd(() => {
+        // После закрытия рекламы — кулдаун 10 сек, чтобы не раздражать подряд
+        setTimeout(() => { adCooldownRef.current = false; }, 10_000);
+      });
+    }
+  };
 
   /* Rewarded ad для бустеров */
   const handleBoostAd = (boostId: string, duration: number) => {
@@ -130,7 +151,7 @@ export default function Index() {
           <div className="py-5">
             <ClickerScene coins={state.coins} totalClicks={state.totalClicks}
               clicksPerSecond={state.clicksPerSecond} multiplier={multiplier}
-              skin={currentSkin} onClick={handleClick} />
+              skin={currentSkin} onClick={handleClickWithAd} />
           </div>
         )}
         {tab === 'skins' && (

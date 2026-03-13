@@ -97,7 +97,11 @@ export function useYandexGames() {
    * Вызывается между уровнями / при открытии игры.
    */
   const showFullscreenAd = (onClose?: () => void) => {
-    if (!sdkRef.current) { onClose?.(); return; }
+    if (!sdkRef.current) {
+      // DEV-режим: симулируем показ на 0.5с потом закрываем
+      setTimeout(() => onClose?.(), 500);
+      return;
+    }
     sdkRef.current.adv.showFullscreenAdv({
       callbacks: {
         onClose: () => { onClose?.(); },
