@@ -13,116 +13,119 @@ export default function LeaderboardPage({ playerName, totalClicks, setPlayerName
   const [nameInput, setNameInput] = useState(playerName);
 
   const saveName = () => {
-    const trimmed = nameInput.trim();
-    if (trimmed.length >= 2) {
-      setPlayerName(trimmed);
-    }
+    const t = nameInput.trim();
+    if (t.length >= 2) setPlayerName(t);
     setEditing(false);
   };
 
-  const playerRank = LEADERBOARD.findIndex(e => totalClicks > e.score);
-  const displayRank = playerRank === -1 ? LEADERBOARD.length + 1 : playerRank + 1;
-
   const allEntries = [
     ...LEADERBOARD,
-    { rank: LEADERBOARD.length + 1, name: playerName, score: totalClicks, emoji: '🌟' },
+    { rank: LEADERBOARD.length + 1, name: playerName, score: totalClicks, emoji: '⭐' },
   ].sort((a, b) => b.score - a.score).slice(0, 12);
 
+  const myRank = allEntries.findIndex(e => e.name === playerName && e.score === totalClicks) + 1;
+
+  const rankColor = (r: number) => r === 1 ? '#FFD700' : r === 2 ? '#C0C0C0' : r === 3 ? '#CD7F32' : '#4a5768';
+  const rankBg   = (r: number) => r === 1 ? '#FFD70015' : r === 2 ? '#C0C0C015' : r === 3 ? '#CD7F3215' : 'transparent';
+
   return (
-    <div className="px-4 py-3 pb-24">
-      <div className="text-center mb-4">
-        <h2 className="font-game text-2xl text-coin">Таблица лидеров</h2>
-        <p className="text-white/50 text-sm">Лучшие кликеры мира!</p>
+    <div className="px-4 py-3 pb-6 space-y-3">
+      {/* Header */}
+      <div className="rblx-panel-gold flex items-center gap-3">
+        <span className="text-2xl">👑</span>
+        <div>
+          <div className="font-game text-lg text-white leading-none">Таблица лидеров</div>
+          <div className="text-xs font-bold tracking-wide mt-0.5" style={{ color: '#4a5768' }}>ТОП КЛИКЕРОВ</div>
+        </div>
       </div>
 
-      {/* Player card */}
-      <div
-        className="card-game mb-4"
-        style={{
-          border: '2px solid rgba(255,215,0,0.5)',
-          boxShadow: '0 0 20px rgba(255,215,0,0.2)',
-        }}
-      >
+      {/* My card */}
+      <div className="rblx-panel" style={{ borderTopColor: '#1A6BFF', borderTopWidth: 3 }}>
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-coin/20 flex items-center justify-center text-2xl">
-            🌟
-          </div>
+          <div className="w-12 h-12 flex items-center justify-center text-2xl"
+            style={{ background: '#0F1923', border: '2px solid #1A6BFF33', borderRadius: 5 }}>⭐</div>
+
           <div className="flex-1">
             {editing ? (
               <div className="flex gap-2">
                 <input
-                  className="flex-1 bg-white/10 rounded-xl px-3 py-1.5 text-white font-body text-sm outline-none border border-white/20 focus:border-coin"
+                  className="flex-1 text-white text-sm font-bold outline-none px-3 py-1.5"
+                  style={{ background: '#0F1923', border: '2px solid #1A6BFF', borderRadius: 4 }}
                   value={nameInput}
                   onChange={e => setNameInput(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && saveName()}
                   maxLength={16}
                   autoFocus
                 />
-                <button
-                  className="game-btn px-3 py-1.5 text-sm"
-                  style={{ background: '#FFD700', color: '#000' }}
-                  onClick={saveName}
-                >
-                  <Icon name="Check" size={16} />
+                <button className="rblx-btn rblx-btn-blue px-3 py-1.5 text-sm" onClick={saveName}>
+                  <Icon name="Check" size={15} />
                 </button>
               </div>
             ) : (
               <div className="flex items-center gap-2">
-                <span className="font-game text-white text-lg">{playerName}</span>
-                <button onClick={() => setEditing(true)} className="text-white/40 hover:text-white/80 transition-colors">
-                  <Icon name="Pencil" size={14} />
+                <span className="font-game text-base text-white">{playerName}</span>
+                <button onClick={() => setEditing(true)} style={{ color: '#2D3A50' }}
+                  className="hover:text-white transition-colors">
+                  <Icon name="Pencil" size={13} />
                 </button>
               </div>
             )}
-            <div className="text-xs text-white/50 mt-0.5">
+            <div className="text-xs font-bold mt-0.5" style={{ color: '#4a5768' }}>
               🪙 {totalClicks.toLocaleString('ru')} кликов
             </div>
           </div>
+
           <div className="text-right">
-            <div className="font-game text-2xl text-coin">#{displayRank}</div>
-            <div className="text-xs text-white/40">место</div>
+            <div className="font-game text-2xl" style={{ color: '#1A6BFF' }}>#{myRank}</div>
+            <div className="text-xs font-bold" style={{ color: '#4a5768' }}>МЕСТО</div>
           </div>
         </div>
       </div>
 
-      {/* Leaderboard */}
-      <div className="space-y-2">
+      {/* List */}
+      <div className="space-y-1.5">
         {allEntries.map((entry, idx) => {
-          const isPlayer = entry.name === playerName && entry.score === totalClicks;
           const rank = idx + 1;
+          const isMe = entry.name === playerName && entry.score === totalClicks;
           const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : null;
 
           return (
             <div
               key={`${entry.name}-${entry.score}`}
-              className={`card-game flex items-center gap-3 transition-all ${isPlayer ? 'border-2 border-coin/40' : ''}`}
+              className="flex items-center gap-3 px-3 py-2.5"
               style={{
-                boxShadow: isPlayer ? '0 0 15px rgba(255,215,0,0.15)' : 'none',
-                background: isPlayer ? 'rgba(255,215,0,0.08)' : undefined,
+                background: isMe ? 'rgba(26,107,255,0.1)' : rankBg(rank),
+                border: `2px solid ${isMe ? '#1A6BFF44' : rank <= 3 ? rankColor(rank) + '33' : '#2D3A50'}`,
+                borderRadius: 5,
               }}
             >
-              <div className="w-9 text-center font-game text-xl flex-shrink-0">
-                {medal || <span className="text-white/30 text-base">#{rank}</span>}
+              {/* Rank */}
+              <div className="w-8 text-center font-game text-lg flex-shrink-0" style={{ color: rankColor(rank) }}>
+                {medal || <span className="text-sm font-bold" style={{ color: '#2D3A50' }}>#{rank}</span>}
               </div>
-              <div
-                className="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
+
+              {/* Avatar */}
+              <div className="w-9 h-9 flex items-center justify-center text-xl flex-shrink-0"
                 style={{
-                  background: rank <= 3
-                    ? `linear-gradient(135deg, ${['#FFD700','#C0C0C0','#CD7F32'][rank-1]}, ${['#FF8C00','#888','#8B4513'][rank-1]})`
-                    : 'rgba(255,255,255,0.08)',
-                }}
-              >
+                  background: rank <= 3 ? `${rankColor(rank)}22` : '#0F1923',
+                  border: `2px solid ${rank <= 3 ? rankColor(rank) + '55' : '#2D3A50'}`,
+                  borderRadius: 4,
+                }}>
                 {entry.emoji || '🏅'}
               </div>
-              <div className="flex-1">
-                <div className={`font-game text-base ${isPlayer ? 'text-coin' : 'text-white'}`}>
+
+              {/* Name */}
+              <div className="flex-1 min-w-0">
+                <span className={`font-game text-sm ${isMe ? 'text-white' : 'text-white'}`} style={{ color: isMe ? '#4d9fff' : undefined }}>
                   {entry.name}
-                  {isPlayer && <span className="text-xs text-white/60 ml-2">(ты)</span>}
-                </div>
+                  {isMe && <span className="ml-1 text-xs font-bold" style={{ color: '#4a5768' }}>(ты)</span>}
+                </span>
               </div>
+
+              {/* Score */}
               <div className="text-right">
-                <div className="font-game text-base text-white">{entry.score.toLocaleString('ru')}</div>
-                <div className="text-xs text-white/40">кликов</div>
+                <div className="font-game text-sm text-white">{entry.score.toLocaleString('ru')}</div>
+                <div className="text-[10px] font-bold tracking-wide" style={{ color: '#4a5768' }}>КЛИКОВ</div>
               </div>
             </div>
           );

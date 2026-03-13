@@ -10,162 +10,101 @@ import AchievementToast from '@/components/game/AchievementToast';
 type Tab = 'game' | 'boosts' | 'achievements' | 'leaderboard' | 'about';
 
 const TABS: { id: Tab; label: string; emoji: string }[] = [
-  { id: 'game', label: 'Игра', emoji: '🎮' },
-  { id: 'boosts', label: 'Бустеры', emoji: '⚡' },
-  { id: 'achievements', label: 'Ачивки', emoji: '🏆' },
-  { id: 'leaderboard', label: 'Топ', emoji: '👑' },
-  { id: 'about', label: 'О игре', emoji: 'ℹ️' },
+  { id: 'game',         label: 'Игра',    emoji: '🎮' },
+  { id: 'boosts',       label: 'Магазин', emoji: '🛒' },
+  { id: 'achievements', label: 'Ачивки',  emoji: '🏆' },
+  { id: 'leaderboard',  label: 'Топ',     emoji: '👑' },
+  { id: 'about',        label: 'Инфо',    emoji: 'ℹ️' },
 ];
 
 export default function Index() {
   const [tab, setTab] = useState<Tab>('game');
-  const {
-    state,
-    handleClick,
-    buyBoost,
-    unlockBoostAd,
-    setPlayerName,
-    getActiveMultiplier,
-    getBoostTimeLeft,
-  } = useGameState();
-
+  const { state, handleClick, buyBoost, unlockBoostAd, setPlayerName, getActiveMultiplier, getBoostTimeLeft } = useGameState();
   const multiplier = getActiveMultiplier();
 
   return (
-    <div
-      className="min-h-screen flex flex-col"
-      style={{
-        background: 'linear-gradient(160deg, #0d0620 0%, #1a0635 40%, #0a1628 100%)',
-      }}
-    >
-      {/* Floating bg blobs */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        {[0,1,2,3,4,5].map((i) => (
-          <div
-            key={i}
-            className="absolute rounded-full"
-            style={{
-              width: `${80 + i * 40}px`,
-              height: `${80 + i * 40}px`,
-              left: `${[10, 70, 30, 85, 20, 60][i]}%`,
-              top: `${[15, 10, 60, 50, 85, 75][i]}%`,
-              background: ['#FFD700','#FF6BC8','#4FC3F7','#69F0AE','#FFB74D','#FF6BC8'][i],
-              opacity: 0.08,
-              animation: `bg-pulse ${3 + i}s ease-in-out infinite`,
-              animationDelay: `${i * 0.5}s`,
-            }}
-          />
-        ))}
-      </div>
+    <div className="min-h-screen flex flex-col" style={{ background: '#0F1923' }}>
 
-      {/* Header */}
-      <header
-        className="relative z-10 flex items-center justify-between px-4 pt-3 pb-2"
-        style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}
-      >
+      {/* Pixel-grid background */}
+      <div className="fixed inset-0 pointer-events-none" style={{
+        backgroundImage: 'linear-gradient(rgba(26,107,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(26,107,255,0.03) 1px, transparent 1px)',
+        backgroundSize: '32px 32px',
+      }} />
+
+      {/* Header — Roblox top bar */}
+      <header className="relative z-10 flex items-center justify-between px-4 py-2.5"
+        style={{ background: '#0a0f1a', borderBottom: '2px solid #1C2333' }}>
         <div className="flex items-center gap-2">
-          <span className="text-2xl">🤖</span>
-          <span className="font-game text-xl text-white">РобоКлик</span>
+          {/* Roblox-style logo block */}
+          <div className="flex gap-0.5">
+            <div className="w-4 h-5 rounded-sm" style={{ background: '#E61919' }} />
+            <div className="w-4 h-5 rounded-sm" style={{ background: '#1A6BFF' }} />
+          </div>
+          <span className="font-game text-xl text-white tracking-wide">НубоКлик</span>
         </div>
-        <div
-          className="flex items-center gap-2 px-4 py-1.5 rounded-2xl font-game text-lg"
-          style={{
-            background: 'rgba(255,215,0,0.12)',
-            border: '1.5px solid rgba(255,215,0,0.35)',
-            boxShadow: '0 0 20px rgba(255,215,0,0.2)',
-          }}
-        >
-          <span>🪙</span>
-          <span className="text-coin">{state.coins.toLocaleString('ru')}</span>
+
+        {/* Balance */}
+        <div className="flex items-center gap-2 px-3 py-1.5 font-game text-base"
+          style={{ background: '#1C2333', border: '2px solid #2D3A50', borderRadius: 4 }}>
+          <div className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black"
+            style={{ background: '#FFD700', color: '#111' }}>R$</div>
+          <span style={{ color: '#FFD700' }}>{state.coins.toLocaleString('ru')}</span>
         </div>
       </header>
 
-      {/* Active boosts strip */}
+      {/* Active boosts bar */}
       {state.activeBoosts.length > 0 && (
-        <div className="relative z-10 flex gap-2 px-4 py-1.5 overflow-x-auto">
+        <div className="relative z-10 flex gap-2 px-4 py-1.5 overflow-x-auto"
+          style={{ background: '#0d131e', borderBottom: '1px solid #1C2333' }}>
           {state.activeBoosts.map(ab => {
-            const timeLeft = getBoostTimeLeft(ab.boostId);
-            if (timeLeft <= 0) return null;
-            const emojis: Record<string, string> = { turbo: '⚡', mega: '🚀', rainbow: '🌈', star: '⭐', robot: '🤖' };
+            const t = getBoostTimeLeft(ab.boostId);
+            if (t <= 0) return null;
+            const emojis: Record<string,string> = { turbo:'⚡', mega:'🚀', rainbow:'🌈', star:'⭐', robot:'🤖' };
             return (
-              <div
-                key={ab.boostId}
-                className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1 rounded-xl text-sm font-bold"
-                style={{
-                  background: 'rgba(255,215,0,0.15)',
-                  border: '1px solid rgba(255,215,0,0.4)',
-                  color: '#FFD700',
-                  animation: 'pulse-glow 2s ease-in-out infinite',
-                }}
-              >
+              <div key={ab.boostId} className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1 font-bold text-sm"
+                style={{ background: '#E61919', borderRadius: 3, color: '#fff', boxShadow: '0 2px 0 #8f0e0e' }}>
                 <span>{emojis[ab.boostId] || '⚡'}</span>
-                <span>{timeLeft}с</span>
+                <span>{t}с</span>
               </div>
             );
           })}
         </div>
       )}
 
-      {/* Main content */}
-      <main className="flex-1 relative z-10 overflow-y-auto" style={{ paddingBottom: '70px' }}>
+      {/* Main */}
+      <main className="flex-1 relative z-10 overflow-y-auto" style={{ paddingBottom: 72 }}>
         {tab === 'game' && (
-          <div className="py-4">
-            <ClickerScene
-              coins={state.coins}
-              totalClicks={state.totalClicks}
-              clicksPerSecond={state.clicksPerSecond}
-              multiplier={multiplier}
-              onClick={handleClick}
-            />
+          <div className="py-5">
+            <ClickerScene coins={state.coins} totalClicks={state.totalClicks}
+              clicksPerSecond={state.clicksPerSecond} multiplier={multiplier} onClick={handleClick} />
           </div>
         )}
         {tab === 'boosts' && (
-          <BoostersPage
-            coins={state.coins}
-            getBoostTimeLeft={getBoostTimeLeft}
-            buyBoost={buyBoost}
-            unlockBoostAd={unlockBoostAd}
-          />
+          <BoostersPage coins={state.coins} getBoostTimeLeft={getBoostTimeLeft}
+            buyBoost={buyBoost} unlockBoostAd={unlockBoostAd} />
         )}
         {tab === 'achievements' && (
-          <AchievementsPage
-            achievements={state.achievements}
-            totalClicks={state.totalClicks}
-            totalCoinsEarned={state.totalCoinsEarned}
-          />
+          <AchievementsPage achievements={state.achievements}
+            totalClicks={state.totalClicks} totalCoinsEarned={state.totalCoinsEarned} />
         )}
         {tab === 'leaderboard' && (
-          <LeaderboardPage
-            playerName={state.playerName}
-            totalClicks={state.totalClicks}
-            setPlayerName={setPlayerName}
-          />
+          <LeaderboardPage playerName={state.playerName}
+            totalClicks={state.totalClicks} setPlayerName={setPlayerName} />
         )}
         {tab === 'about' && <AboutPage />}
       </main>
 
-      {/* Bottom navigation */}
-      <nav
-        className="fixed bottom-0 left-0 right-0 z-20 flex items-center justify-around py-2"
-        style={{
-          background: 'rgba(8,3,20,0.97)',
-          backdropFilter: 'blur(20px)',
-          borderTop: '1px solid rgba(255,255,255,0.08)',
-        }}
-      >
+      {/* Bottom nav — Roblox sidebar style */}
+      <nav className="fixed bottom-0 left-0 right-0 z-20 flex items-center justify-around py-2 px-1"
+        style={{ background: '#0a0f1a', borderTop: '2px solid #1C2333' }}>
         {TABS.map(t => (
-          <button
-            key={t.id}
-            className={`nav-btn ${tab === t.id ? 'active' : ''}`}
-            onClick={() => setTab(t.id)}
-          >
+          <button key={t.id} className={`nav-btn ${tab === t.id ? 'active' : ''}`} onClick={() => setTab(t.id)}>
             <span className="text-xl leading-none">{t.emoji}</span>
             <span>{t.label}</span>
           </button>
         ))}
       </nav>
 
-      {/* Achievement toast */}
       <AchievementToast achievements={state.achievements} />
     </div>
   );
